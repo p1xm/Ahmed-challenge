@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحدي الأصدقاء - المنصة الرئيسية</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --card-bg: #16213e;
+            --accent-color: #e94560;
+            --secondary-accent: #00adb5;
+            --text-main: #e0e0e0;
+            --input-bg: #0f3460;
+            --border-color: #0f3460;
+        }
+
+        body {
+            font-family: 'Tahoma', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            text-align: center;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container { width: 100%; max-width: 420px; }
+
+        .card {
+            background: var(--card-bg);
+            color: #ffffff;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            text-align: right;
+        }
+
+        .card h2 { text-align: center; color: var(--accent-color); margin-bottom: 20px; font-size: 22px; }
+        .card h3 { color: var(--secondary-accent); font-size: 16px; margin-top: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
+        
+        label { display: block; margin-bottom: 5px; font-size: 13px; color: #a0a0a0; }
+        
+        input, select {
+            width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 8px;
+            border: 1px solid var(--border-color); background: var(--input-bg);
+            color: #fff; font-size: 14px; box-sizing: border-box;
+        }
+
+        button {
+            width: 100%; padding: 12px; border-radius: 8px; border: none; cursor: pointer;
+            font-weight: bold; font-size: 15px; background: var(--accent-color); color: white;
+            transition: 0.3s; box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+        }
+        button:hover { background: #d63851; }
+
+        .switch-btn {
+            background: transparent; color: var(--secondary-accent); border: none;
+            margin-top: 15px; cursor: pointer; font-size: 13px; text-decoration: underline; box-shadow: none;
+        }
+
+        .id-box {
+            background: #0f3460; padding: 12px; border-radius: 8px; text-align: center;
+            font-size: 15px; margin: 15px 0; border: 1px dashed var(--secondary-accent);
+        }
+        .id-box span { color: var(--secondary-accent); font-weight: bold; }
+        .msg { text-align: center; font-size: 13px; margin-top: 10px; color: #ffcc00; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- 1. نموذج إنشاء حساب جديد -->
+        <div class="card" id="register-section">
+            <h2>🎮 إنشاء حساب جديد</h2>
+            
+            <label>اسم المستخدم:</label>
+            <input type="text" id="reg-username" placeholder="اكتب اسمك...">
+            
+            <label>رقم الهاتف (للدخول من أي جهاز):</label>
+            <input type="tel" id="reg-phone" placeholder="مثال: 01012345678">
+            
+            <label>الرقم السري:</label>
+            <input type="password" id="reg-password" placeholder="أدخل رمز سري قوي...">
+
+            <label style="color: var(--secondary-accent);">كود الأصدقاء (AY2009):</label>
+            <input type="text" id="reg-invite-code" placeholder="أدخل الكود السري للانضمام...">
+
+            <label>السيرة الذاتية (15 حرف كحد أقصى):</label>
+            <input type="text" id="reg-bio" placeholder="نبذة قصيرة..." maxlength="15">
+            
+            <button onclick="register()">إنشاء الحساب</button>
+            <p id="reg-msg" class="msg"></p>
+            
+            <div style="text-align: center;">
+                <button class="switch-btn" onclick="showLogin()">لديك حساب بالفعل؟ سجل دخول من هنا</button>
+            </div>
+        </div>
+
+        <!-- 2. نموذج تسجيل الدخول من أي جهاز -->
+        <div class="card" id="login-section" style="display: none;">
+            <h2>🔐 تسجيل الدخول</h2>
+            
+            <label>رقم الهاتف:</label>
+            <input type="tel" id="login-phone" placeholder="رقم هاتفك المسجل...">
+            
+            <label>الرقم السري:</label>
+            <input type="password" id="login-password" placeholder="الرمز السري...">
+            
+            <button onclick="login()" style="background: var(--secondary-accent);">دخول للحساب</button>
+            <p id="login-msg" class="msg"></p>
+            
+            <div style="text-align: center;">
+                <button class="switch-btn" onclick="showRegister()">ليس لديك حساب؟ إنشاء حساب جديد</button>
+            </div>
+        </div>
+
+        <!-- 3. لوحة التحكم الرئيسية بعد الدخول -->
+        <div class="card" id="dashboard" style="display:none;">
+            <h2>مرحباً بك، <span id="user-name" style="color: var(--accent-color);"></span> 👋</h2>
+            
+            <div class="id-box">
+                الـ ID الخاص بك: <span id="my-id"></span>
+                <button onclick="copyMyId()" style="background: transparent; color: #fff; font-size: 12px; margin-top: 8px; padding: 4px; border: 1px solid var(--secondary-accent);">📋 نسخ الـ ID</button>
+            </div>
+            <p style="text-align: center; font-size: 13px; color: #a0a0a0;">رقم الهاتف: <span id="user-phone-display"></span></p>
+
+            <hr style="border-color: var(--border-color); margin: 15px 0;">
+
+            <h3>⚔️ بدء تحدي جديد عبر ملف</h3>
+            <label>ID الصديق المراد تحديه:</label>
+            <input type="text" id="target-friend-id" placeholder="أدخل ID الخصم...">
+            
+            <label>عدد الأسئلة:</label>
+            <input type="number" id="num-questions" value="5" min="3" max="15">
+            
+            <label>رفع ملف الدرس (PDF أو نص):</label>
+            <input type="file" id="lesson-file" accept=".pdf,.txt">
+            
+            <button onclick="startChallenge()" style="background: #27ae60;">🚀 توليد الأسئلة وبدء المعركة</button>
+            <p id="challenge-msg" class="msg"></p>
+        </div>
+
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        function showLogin() {
+            document.getElementById('register-section').style.display = 'none';
+            document.getElementById('login-section').style.display = 'block';
+        }
+        function showRegister() {
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('register-section').style.display = 'block';
+        }
+
+        async function register() {
+            const username = document.getElementById('reg-username').value;
+            const phone = document.getElementById('reg-phone').value;
+            const password = document.getElementById('reg-password').value;
+            const inviteCode = document.getElementById('reg-invite-code').value;
+            const bio = document.getElementById('reg-bio').value;
+            const msgEl = document.getElementById('reg-msg');
+
+            if (!username || !phone || !password || !inviteCode) {
+                msgEl.innerText = '⚠️ برجاء ملء جميع الحقول بما فيها كود الأصدقاء!';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, phone, password, inviteCode, bio })
+                });
+                const data = await response.json();
+                
+                if(response.ok) {
+                    alert('🎉 تم إنشاء الحساب بنجاح!');
+                    setupDashboard(data.user);
+                } else {
+                    msgEl.innerText = data.error;
+                }
+            } catch (err) {
+                msgEl.innerText = '❌ خطأ في الاتصال بالسيرفر!';
+            }
+        }
+
+        async function login() {
+            const phone = document.getElementById('login-phone').value;
+            const password = document.getElementById('login-password').value;
+            const msgEl = document.getElementById('login-msg');
+
+            if (!phone || !password) {
+                msgEl.innerText = '⚠️ برجاء إدخال رقم الهاتف والرقم السري!';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, password })
+                });
+                const data = await response.json();
+                
+                if(response.ok) {
+                    setupDashboard(data.user);
+                } else {
+                    msgEl.innerText = data.error;
+                }
+            } catch (err) {
+                msgEl.innerText = '❌ خطأ في الاتصال بالسيرفر!';
+            }
+        }
+
+        function setupDashboard(user) {
+            currentUser = user;
+            document.getElementById('user-name').innerText = currentUser.username;
+            document.getElementById('my-id').innerText = currentUser.userId;
+            document.getElementById('user-phone-display').innerText = currentUser.phone;
+            
+            document.getElementById('register-section').style.display = 'none';
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+        }
+
+        function copyMyId() {
+            const idText = document.getElementById('my-id').innerText;
+            navigator.clipboard.writeText(idText);
+            alert('✨ تم نسخ الـ ID بنجاح: ' + idText);
+        }
+
+        async function startChallenge() {
+            const friendId = document.getElementById('target-friend-id').value;
+            const numQ = document.getElementById('num-questions').value;
+            const fileInput = document.getElementById('lesson-file').files[0];
+            const msgEl = document.getElementById('challenge-msg');
+
+            if (!fileInput || !friendId) {
+                msgEl.innerText = '⚠️ برجاء إدخال ID الخصم واختيار ملف الدرس!';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('challengerId', currentUser.userId);
+            formData.append('opponentId', friendId);
+            formData.append('numQuestions', numQ);
+            formData.append('lessonFile', fileInput);
+
+            msgEl.innerText = '🤖 جاري قراءة الملف وتوليد الأسئلة بالذكاء الاصطناعي...';
+
+            const response = await fetch('http://localhost:3000/api/create-challenge', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                window.location.href = `challenge.html?challengeId=${data.challengeId}&userId=${currentUser.userId}`;
+            } else {
+                msgEl.innerText = '❌ ' + data.error;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>غرفة التحدي المباشر</title>
+    <style>
+        body { font-family: Tahoma, sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; text-align: center; margin: 0; }
+        .quiz-card { background: #16213e; color: #ffffff; padding: 25px; margin: 15px auto; width: 450px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); border: 1px solid #0f3460; }
+        .option-btn { display: block; width: 100%; padding: 12px; margin: 10px 0; background: #0f3460; color: #ffffff; border: 1px solid #1f4068; border-radius: 6px; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        .option-btn:hover { background: #1f4068; border-color: #e94560; }
+        .scores-box { display: flex; justify-content: space-around; background: #0f3460; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
+        .timer-box { background: #222831; color: #00adb5; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #393e46; font-weight: bold; }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .danger-pulse { background: #3a0ca3 !important; color: #ff6b6b !important; animation: pulse 0.6s infinite ease-in-out; border-color: #7209b7; }
+    </style>
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+    <div class="quiz-card">
+        <h2>🔥 تحدي الأصدقاء المباشر</h2>
+        
+        <div id="timer-box" class="timer-box">
+            ⏳ الوقت المتبقي: <span id="timer" style="font-weight: bold; font-size: 18px;">120</span> ثانية
+        </div>
+
+        <div style="margin-bottom: 15px; display: flex; justify-content: center; gap: 10px;">
+            <button id="power-50-50" onclick="use5050()" style="background: #f39c12; padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; color: white; width: auto;">⚡ حذف إجابتين (50/50)</button>
+            <button id="power-freeze" onclick="useFreeze()" style="background: #9b59b6; padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; color: white; width: auto;">❄️ تجميد وقت الخصم</button>
+        </div>
+
+        <div class="scores-box">
+            <div>نقاطك: <span id="my-score">0</span></div>
+            <div>نقاط خصمك: <span id="opponent-score">0</span></div>
+        </div>
+
+        <div id="question-container">
+            <h3 id="question-text">جاري تحميل الأسئلة...</h3>
+            <div id="options-container"></div>
+        </div>
+        
+        <p id="status-msg"></p>
+    </div>
+
+    <script>
+        const socket = io('http://localhost:3000');
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const challengeId = urlParams.get('challengeId') || '12345';
+        const myUserId = urlParams.get('userId') || 'USER-1001';
+
+        let questions = [
+            { question: "ما عاصمة مصر؟", options: ["الإسكندرية", "القاهرة", "الجيزة", "أسوان"], correctAnswer: "القاهرة" },
+            { question: "كم عدد سور القرآن الكريم؟", options: ["112", "114", "120", "110"], correctAnswer: "114" }
+        ];
+        let currentIndex = 0;
+        let myScore = 0;
+        let timerInterval;
+        const TIME_PER_QUESTION = 120; // 120 ثانية لكل سؤال
+        let used5050 = false;
+        let usedFreeze = false;
+
+        socket.emit('join_challenge', challengeId);
+
+        function startTimer() {
+            let timeLeft = TIME_PER_QUESTION;
+            const timerElement = document.getElementById('timer');
+            const timerBox = document.getElementById('timer-box');
+            
+            timerElement.innerText = timeLeft;
+            timerBox.classList.remove('danger-pulse');
+            clearInterval(timerInterval);
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerElement.innerText = timeLeft;
+
+                // تفعيل النبض والأحمر في آخر 10 ثواني
+                if (timeLeft <= 10) {
+                    timerBox.classList.add('danger-pulse');
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerBox.classList.remove('danger-pulse');
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function handleTimeOut() {
+            alert('خلص الوقت! ⏰ (120 ثانية انتهت) وتم احتساب السؤال خطأ.');
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(btn => btn.disabled = true);
+
+            setTimeout(() => {
+                currentIndex++;
+                showQuestion();
+            }, 1500);
+        }
+
+        function showQuestion() {
+            if (currentIndex >= questions.length) {
+                clearInterval(timerInterval);
+                document.querySelector('.quiz-card').innerHTML = `<h3>انتهى التحدي! 🎉</h3><p>نتيجتك النهائية: ${myScore}</p>`;
+                return;
+            }
+
+            const q = questions[currentIndex];
+            document.getElementById('question-text').innerText = q.question;
+            
+            const optionsDiv = document.getElementById('options-container');
+            optionsDiv.innerHTML = '';
+            
+            q.options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = option;
+                btn.onclick = () => checkAnswer(option, q.correctAnswer);
+                optionsDiv.appendChild(btn);
+            });
+
+            startTimer();
+        }
+
+        function checkAnswer(selected, correct) {
+            clearInterval(timerInterval);
+            document.getElementById('timer-box').classList.remove('danger-pulse');
+
+            if (selected === correct) {
+                myScore += 10;
+                document.getElementById('my-score').innerText = myScore;
+                alert('إجابة صحيحة! ✅');
+            } else {
+                alert('إجابة خاطئة! ❌');
+            }
+
+            currentIndex++;
+            socket.emit('submit_answer', { challengeId, userId: myUserId, score: myScore });
+            showQuestion();
+        }
+
+        function use5050() {
+            if (used5050) return alert('لقد استخدمت هذه المساعدة من قبل!');
+            const q = questions[currentIndex];
+            const buttons = Array.from(document.querySelectorAll('.option-btn'));
+            let wrongButtons = buttons.filter(btn => btn.innerText !== q.correctAnswer);
+            wrongButtons.sort(() => Math.random() - 0.5);
+            wrongButtons[0].style.display = 'none';
+            wrongButtons[1].style.display = 'none';
+            used5050 = true;
+        }
+
+        function useFreeze() {
+            if (usedFreeze) return alert('لقد استخدمت تجميد الوقت من قبل!');
+            socket.emit('freeze_opponent', { challengeId });
+            usedFreeze = true;
+            alert('تم إرسال تجميد الوقت للخصم لمدة 5 ثواني! ❄️');
+        }
+
+        socket.on('you_are_frozen', () => {
+            alert('⚠️ لقد قام خصمك بتجميد عداد الوقت لديك لمدة 5 ثواني!');
+            clearInterval(timerInterval);
+            setTimeout(() => { startTimer(); }, 5000);
+        });
+
+        socket.on('opponent_progress', (data) => {
+            if (data.userId !== myUserId) {
+                document.getElementById('opponent-score').innerText = data.score;
+            }
+        });
+
+        showQuestion();
+    </script>
+</body>
+</html>
